@@ -27,7 +27,8 @@ INSTALLED_APPS = [
     'auth_app.apps.AuthAppConfig',
     'quiz_app.apps.QuizAppConfig',
     'corsheaders',
-    'rest_frameworks',
+    'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
 MIDDLEWARE = [

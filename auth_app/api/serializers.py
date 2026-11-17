@@ -50,4 +50,10 @@ class RegisterSerializer(serializers.Serializer):
             email = email,
         )
         return new_user
-            
+
+class LoginSerializer(serializers.Serializer):
+    ''' Validates the username and password fields in a login request. '''
+    username = serializers.CharField(max_length=150)
+    password = serializers.CharField(write_only=True)
+    
+    
