@@ -101,8 +101,33 @@ class LogoutView(APIView):
         response.delete_cookie("access_token") # fügt der Antwort einen Set-Cookie-Header hinzu, der den Cookie sofort ablaufen lässt. Dafür genügt der Cookie-Name.
         response.delete_cookie("refresh_token")
         return response
+    
+class RefreshTokenView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    
+    def post(self, request):
+        ''' Validate the refresh token from the request cookie and set a new access token as an HTTP-only cookie. Return HTTP 401 if the refresh token is missing or invalid. '''
+        response = Response({
+            "detail": "Token refreshed"
+        }, status=status.HTTP_200_OK)
         
+        refresh_token = request.COOKIES.get("refresh_token") # durch den Zugriff auf die Cookies können wir uns den refresh_token holen
         
+        if refresh_token is None:
+            return Response({
+                "detail": "Refresh Token wurde nicht gefunden!"
+            }, status=status.HTTP_401_UNAUTHORIZED)
+            
+        try:
+            token = RefreshToken(refresh_token)
+        except TokenError: 
+            return Response({
+                "detail": "Refresh Token ist nicht valide"
+            }, status=status.HTTP_401_UNAUTHORIZED)
+            
+        access_token = str(token.access_token)
         
-        
+        response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="Lax")
+        return response
         

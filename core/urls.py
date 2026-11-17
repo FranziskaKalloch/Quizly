@@ -11,5 +11,4 @@ urlpatterns = [
     #path('api', include("quiz_app.api.urls")),
     
     path('api/token/', TokenObtainPairView.as_view()),
-    path('api/token/refresh/', TokenRefreshView.as_view()),
 ]
