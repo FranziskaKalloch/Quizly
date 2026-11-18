@@ -1,5 +1,7 @@
+import re # reguläre Expression - mit re.search sucht Python an einer beliebigen Stelle im TExt nach dem angegebenen Muster
 from rest_framework import serializers
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
+
 
 from ..models import Quiz, Questions
 
@@ -20,7 +22,7 @@ class QuizCreateSerializer(serializers.Serializer):
     url = serializers.URLField(required=True, allow_blank=False, max_length=200) # übernimmt die grundsätzlich Prüfung für ein gültiges URL Format
     
     def validate_url(self, value): # value enthält den eingegebenen Link als Text
-        '''  '''
+        ''' Validates the format of a YouTube watch URL. '''
         parsed_url = urlparse(value) # parse -> einen Text nach seiner Struktur zu lesen. | urlparse(value) zerlegt diesen Text in sechs Teile (scheme: Protokoll, also https; netloc: Addressteil, wie www.youtube.de; path, wie /watch; params; query; fragment)
         host = parsed_url.hostname # extrahiert nur den Host
         
@@ -30,7 +32,20 @@ class QuizCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 f"Der Host '{host}' ist nicht erlaubt."
             )
+        
+        if parsed_url.path != "/watch":
+            raise serializers.ValidationError("Bitte gib einen YouTube Link mit dem Pfad /watch ein")
+        
+        # ID auslesen
+        query_params = parse_qs(parsed_url.query) 
+        video_ids = query_params.get("v", [])
+        
+        if len(video_ids) != 1:
+            raise serializers.ValidationError("Der YouTube-Link muss genau eine Video-ID enthalten.")
+        
         return value
+    
+    
 
 
 class QuestionSerializer(serializers.ModelSerializer):
