@@ -1,7 +1,6 @@
-import re
-from urllib.parse import parse_qs, urlparse
-
+import re # reguläre Expression - mit re.search sucht Python an einer beliebigen Stelle im TExt nach dem angegebenen Muster
 from rest_framework import serializers
+from urllib.parse import urlparse, parse_qs, urlencode
 
 
 from ..models import Quiz, Questions
@@ -18,37 +17,46 @@ from ..models import Quiz, Questions
 # Bei youtu.be steht die ID direkt im Pfad. Fehlt die ID oder gehört der Host zu einer anderen Website, meldest du einen Validierungsfehler für url.
 # Die View arbeitet mit der geprüften URL weiter. Wenn alles passt, gibst du aus validate_url den Link zurück. Die View findet ihn dann in validated_data unter url und kann ihn später an yt-dlp weitergeben. 
 # Bei einem Validierungsfehler antwortet der Endpunkt mit 400.
-
-
 class QuizCreateSerializer(serializers.Serializer):
-    """Validate and normalize the video URL submitted to create a quiz."""
-
-    url = serializers.URLField(max_length=200)
-
-    def validate_url(self, value):
-        """Return the canonical URL for a YouTube video or short link."""
-        parsed_url = urlparse(value)
-        host = parsed_url.hostname
+    ''' Validates the video URL submitted to create a quiz. '''
+    url = serializers.URLField(required=True, allow_blank=False, max_length=200) # übernimmt die grundsätzlich Prüfung für ein gültiges URL Format
+    
+    def validate_url(self, value): # value enthält den eingegebenen Link als Text
+        ''' Validates a YouTube video link and returns its canonical URL. '''
+        parsed_url = urlparse(value) # parse -> einen Text nach seiner Struktur zu lesen. | urlparse(value) zerlegt diesen Text in sechs Teile (scheme: Protokoll, also https; netloc: Addressteil, wie www.youtube.de; path, wie /watch; params; query; fragment)
+        host = parsed_url.hostname # extrahiert nur den Host
+        
+        allowed_hosts = ["youtube.com", "www.youtube.com", "youtu.be"]
 
         if parsed_url.scheme not in {"http", "https"}:
             raise serializers.ValidationError("Bitte gib einen HTTP- oder HTTPS-Link ein.")
-
+        
+        if host not in allowed_hosts:
+            raise serializers.ValidationError(
+                f"Der Host '{host}' ist nicht erlaubt."
+            )
+        
+        # Die Video-ID steht beim Kurzlink im Pfad und beim /watch-Link in der Query.
         if host == "youtu.be":
             video_ids = [parsed_url.path.removeprefix("/").removesuffix("/")]
-        elif host in {"youtube.com", "www.youtube.com"} and parsed_url.path == "/watch":
+        elif parsed_url.path == "/watch":
             query_params = parse_qs(parsed_url.query, keep_blank_values=True)
             video_ids = query_params.get("v", [])
         else:
-            raise serializers.ValidationError("Bitte gib einen YouTube-Videolink ein.")
+            raise serializers.ValidationError("Bitte gib einen YouTube Link mit dem Pfad /watch ein")
 
         if len(video_ids) != 1 or not re.fullmatch(r"[A-Za-z0-9_-]{11}", video_ids[0]):
             raise serializers.ValidationError("Der YouTube-Link muss genau eine gültige Video-ID enthalten.")
 
-        return f"https://www.youtube.com/watch?v={video_ids[0]}"
+        video_id = video_ids[0] # Hole die einzelne Video-ID aus der Liste.
 
+        query = urlencode({"v": video_id}) # Baue die Query mit genau einem Parameter, zum Beispiel v=jNQXAC9IVRw.
+        return f"https://www.youtube.com/watch?{query}" # Gib die URL in dem Format zurück, das Quizly speichert.
+    
+    
 
 class QuestionSerializer(serializers.ModelSerializer):
-    """Serialize a quiz question and its answer options."""
+    ''' Serializes a quiz question with its answer options, correct answer, and timestamps. '''
 
     def get_fields(self):
         fields = super().get_fields()
