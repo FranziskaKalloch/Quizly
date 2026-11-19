@@ -9,9 +9,8 @@ from django.contrib.auth import authenticate
 
 from .serializers import RegisterSerializer, LoginSerializer
 
-
 class RegisterView(APIView):
-    """Validate the registration data, create a new user, and return a 201 Created response."""
+    """ Validate the registration data, create a new user, and return a 201 Created response."""
     permission_classes = [AllowAny]
     
     def post(self, request):
