@@ -22,7 +22,7 @@ class CreateQuizView(APIView):
     authentication_classes = [CookieJWTAuthentication]
 
     def post(self, request):
-        """Create a quiz from the submitted YouTube URL and return it with its questions."""
+        ''' Create a quiz from the submitted YouTube URL and return it with its questions. '''
         serializer = QuizCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -50,11 +50,11 @@ class RetrieveUpdateDestroyQuizView(RetrieveUpdateDestroyAPIView):
     http_method_names = ['get', 'patch', 'delete', 'head', 'options']
     
     def get_queryset(self):
-        '''Returns the queryset used to look up a quiz by its ID.'''
+        ''' Returns the queryset used to look up a quiz by its ID. '''
         return Quiz.objects.all()
     
     def get_serializer_context(self):
-        """Excludes question timestamps from the serialized response via serializer context."""
+        ''' Excludes question timestamps from the serialized response via serializer context. '''
         context = super().get_serializer_context()
         context["include_question_timestamps"] = False
         return context

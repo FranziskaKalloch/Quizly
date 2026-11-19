@@ -15,6 +15,7 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
+        ''' Validate registration data, create a user, and return a success response. '''
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True) # sorgt dafür das ungültige Daten als 400 zurückkommen
         serializer.save() # ruft die create Methode auf
@@ -22,7 +23,7 @@ class RegisterView(APIView):
     
 
 class LoginView(APIView):
-    '''Authenticate the user and return their account details on success or a 401 response if the credentials are invalid.'''
+    ''' Authenticate the user and return their account details on success or a 401 response if the credentials are invalid. '''
     permission_classes = [AllowAny]
     
     def post(self, request):

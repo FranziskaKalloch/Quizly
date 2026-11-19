@@ -20,14 +20,14 @@ from ..models import Questions, Quiz
 
 
 class QuizCreationError(Exception): # Die Klasse erbt von Pythons eingebauter Fehlerklasse Exception. Dadurch besitzt sie bereits alles, was sie braucht, um Fehler auszulösen und abzufangen
-    """Represent an error during audio processing or quiz generation."""
+    ''' Represent an error during audio processing or quiz generation. '''
 # Bei einer Quizerstellung können unterschiedliche Probleme auftreten:
 # Download schlägt fehl
 # Whisper kann die Audiodatei nicht transkribieren
 # Gemini liefert keine gültigen Quizdaten
 
 class GeneratedQuestion(BaseModel):
-    """Define and validate a generated question with four answer options."""
+    ''' Define and validate a generated question with four answer options. '''
     model_config = ConfigDict(str_strip_whitespace=True, hide_input_in_errors=True)
 
     question_title: str = Field(min_length=1, max_length=255)
@@ -36,7 +36,7 @@ class GeneratedQuestion(BaseModel):
 
     @model_validator(mode="after")
     def validate_answers(self):
-        """Ensure options are nonempty and unique and contain the correct answer."""
+        ''' Ensure options are nonempty and unique and contain the correct answer.'''
         if "" in self.question_options or len(set(self.question_options)) != 4:
             raise ValueError("The four options must be nonempty and distinct.")
         if self.answer not in self.question_options:
@@ -45,7 +45,7 @@ class GeneratedQuestion(BaseModel):
 
 
 class GeneratedQuiz(BaseModel):
-    """Define and validate a generated quiz containing exactly ten questions."""
+    '''Define and validate a generated quiz containing exactly ten questions.'''
     model_config = ConfigDict(str_strip_whitespace=True, hide_input_in_errors=True)
 
     title: str = Field(min_length=1, max_length=255)
@@ -55,7 +55,7 @@ class GeneratedQuiz(BaseModel):
 
  # die gesamte Funktion soll die Audiospur eines YouTube Videos herunterladen und als Datei für Whisper bereitstellen
 def _download_audio(video_url, temp_dir): # zwei Parameter: video_url: den Link zum YouTube Video | temp_dir: der temporäre Ordner, in dem die Datei gespeichert werden soll
-    """Download YouTube audio as an M4A file and return its path."""
+    '''Download YouTube audio as an M4A file and return its path.'''
     ydl_opts = { # Der Part legt zunächst die Einstellungen fest
         "format": "bestaudio/best", # damit bestimmt man, welche verfügbare Mediendatei yt-dlp auswählen soll | bestaudio: bevorzugt die beste verfügbare reine Audiospur. | /best: Falls diese nicht verfügbar ist, verwende als Ersatz das beste Format mit Bild und Ton.
         "outtmpl": str(temp_dir / "audio.%(ext)s"), # Das legt Speicherort und Dateinamen fest. Zerlegen wir den Ausdruck: temp_dir - ist der temporäre Ordner | / verbindet hier einen Ordnerpfad mit einem Dateinamen | audio ist der gewünschte Dateiname. | %(ext)s ist ein Platzhalter, den yt-dlp durch die tatsächliche Dateiendung ersetzt.
