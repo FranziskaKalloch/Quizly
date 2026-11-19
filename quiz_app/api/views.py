@@ -14,7 +14,6 @@ from .serializers import QuizCreateSerializer, QuizSerializer
 from ..models import Quiz
 from .permissions import IsQuizOwner
 
-
 logger = logging.getLogger(__name__)
 
 class CreateQuizView(APIView):
@@ -59,7 +58,3 @@ class RetrieveUpdateDestroyQuizView(RetrieveUpdateDestroyAPIView):
         context["include_question_timestamps"] = False
         return context
 
-# Für PATCH sind drei Dinge entscheidend:
-#- Nur der Besitzer darf das Quiz bearbeiten.
-#- Titel und Beschreibung müssen einzeln änderbar sein; weggelassene Felder bleiben unverändert.
-#- Die Antwort enthält das vollständige aktualisierte Quiz samt Fragen.

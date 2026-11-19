@@ -21,10 +21,10 @@ class RegisterSerializer(serializers.Serializer):
                 "password": "Die Passwörter stimmen nicht überein!"
             })
         
-        try: # try meint: 'führe diese Code aus' Wenn das Passwort alle Regeln erfüllt, geht die Methode zur EMail Prüfung weiter
+        try: 
             validate_password(password=data['password'])
-        except ValidationError as error: # except heisst: "Wenn dabei dieser Fehler auftritt, führe diese BLock aus"
-            raise serializers.ValidationError({"password": error.messages}) from error # error.message enthält die Begründung
+        except ValidationError as error: 
+            raise serializers.ValidationError({"password": error.messages}) from error
             
         if User.objects.filter(email__iexact=email).exists():
             raise serializers.ValidationError({

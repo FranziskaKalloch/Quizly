@@ -1,30 +1,21 @@
-
-# Imports aus der Python Standardbibliothek
-from functools import cache # cache merkt sich das Ergebnis eines Funktionsaufrufs.
+from functools import cache 
 from os import getenv
-from pathlib import Path # hilft beim Umgang mit Datei- und Ordnerpfaden. 
-from shutil import which # which prüft, ob ein ausführbares Programm über den Suchpfad PATH gefunden werden kann. Wird ein Programm nicht gefunden, liefert which den Wert None
-from tempfile import TemporaryDirectory # erstellt einen vorübergehenden Ordner für die heruntergeladene Audiodatei.
-from threading import Lock # Ein Lock ist eine Sperre für gleichzeitig laufende Verarbeitungsschritte.
+from pathlib import Path 
+from shutil import which 
+from tempfile import TemporaryDirectory 
+from threading import Lock 
 
-## zusätzlich installierte Pakete
-import yt_dlp # Damit importierst du das Download-Werkzeug yt-dlp. Später greift man über yt_dlp.YoutubeDL darauf zu, um die Audiodatei herunterzuladen.
-from django.db import transaction # hilft zusammengehörige Datenbankänderungen gemeinsam zu speichern
-from google import genai # Das ist das Google Gen AI SDK. damit erstellt die Funktion später einen Client, der die Anfrage an Gemini sendet.
-from google.genai import errors, types # Hier werden zwei Bestandteile aus dem SDK importiert: errors: enthält Fehlertypen, mit denen man beispielsweise API-Fehler abfangen kann. types: enthält Datenstrukturen für die Anfrage-Einstellungen.
-from httpx2 import HTTPError # ist ein Fehlertyp aus der verwendeten HTTP-Bibliothek.
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator #
-# ntic prüft die Struktur und die Werte von Daten. Kontrolliert hier die GEmini erzeugten Antworten
+import yt_dlp 
+from django.db import transaction 
+from google import genai 
+from google.genai import errors, types 
+from httpx2 import HTTPError 
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator 
 
 from ..models import Questions, Quiz
 
-
-class QuizCreationError(Exception): # Die Klasse erbt von Pythons eingebauter Fehlerklasse Exception. Dadurch besitzt sie bereits alles, was sie braucht, um Fehler auszulösen und abzufangen
+class QuizCreationError(Exception): 
     ''' Represent an error during audio processing or quiz generation. '''
-# Bei einer Quizerstellung können unterschiedliche Probleme auftreten:
-# Download schlägt fehl
-# Whisper kann die Audiodatei nicht transkribieren
-# Gemini liefert keine gültigen Quizdaten
 
 class GeneratedQuestion(BaseModel):
     ''' Define and validate a generated question with four answer options. '''
@@ -53,16 +44,15 @@ class GeneratedQuiz(BaseModel):
     questions: list[GeneratedQuestion] = Field(min_length=10, max_length=10)
     
 
- # die gesamte Funktion soll die Audiospur eines YouTube Videos herunterladen und als Datei für Whisper bereitstellen
-def _download_audio(video_url, temp_dir): # zwei Parameter: video_url: den Link zum YouTube Video | temp_dir: der temporäre Ordner, in dem die Datei gespeichert werden soll
+def _download_audio(video_url, temp_dir):
     '''Download YouTube audio as an M4A file and return its path.'''
-    ydl_opts = { # Der Part legt zunächst die Einstellungen fest
-        "format": "bestaudio/best", # damit bestimmt man, welche verfügbare Mediendatei yt-dlp auswählen soll | bestaudio: bevorzugt die beste verfügbare reine Audiospur. | /best: Falls diese nicht verfügbar ist, verwende als Ersatz das beste Format mit Bild und Ton.
-        "outtmpl": str(temp_dir / "audio.%(ext)s"), # Das legt Speicherort und Dateinamen fest. Zerlegen wir den Ausdruck: temp_dir - ist der temporäre Ordner | / verbindet hier einen Ordnerpfad mit einem Dateinamen | audio ist der gewünschte Dateiname. | %(ext)s ist ein Platzhalter, den yt-dlp durch die tatsächliche Dateiendung ersetzt.
-        "quiet": False, # Das aktiviert den stillen Modus und unterdrückt normale Ausgaben von yt-dlp.
-        "noplaylist": True, # Wenn der Link sowohl ein einzelnes Video als auch eine Playlist bezeichnet, soll nur das einzelne Video verarbeitet werden.
-        "js_runtimes": {"deno": {}, "node": {}}, # Hier erlaubst du yt-dlp, Deno oder Node.js als JavaScript-Laufzeit zu verwenden. Solche Programme können bei der Verarbeitung von YouTube-Seiten benötigt werden.
-        "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "m4a"}], # Das legt fest, was nach dem Download passieren soll: postprocessors enthält eine Liste von Nachbearbeitungsschritten.
+    ydl_opts = { 
+        "format": "bestaudio/best", 
+        "outtmpl": str(temp_dir / "audio.%(ext)s"), 
+        "quiet": False, 
+        "noplaylist": True, 
+        "js_runtimes": {"deno": {}, "node": {}}, 
+        "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "m4a"}], 
     }
 
     try:
@@ -91,7 +81,6 @@ def _whisper_model():
 def _transcribe_audio(audio_path):
     """Transcribe an audio file with Whisper and return nonempty text."""
     try:
-        # Ein Whisper-Modell pro Prozess laden und seine Nutzung serialisieren.
         with _whisper_lock:
             result = _whisper_model().transcribe(str(audio_path), fp16=False)
     except (OSError, RuntimeError) as error:
@@ -136,14 +125,12 @@ def create_quiz_from_url(video_url, user):
     if not which("ffmpeg") or not which("ffprobe"):
         raise QuizCreationError("FFmpeg and ffprobe must be available on PATH.")
 
-    # Der Ordner bleibt bis zum Ende der Transkription verfügbar.
     with TemporaryDirectory() as temp_dir:
         audio_path = _download_audio(video_url, Path(temp_dir))
         transcript = _transcribe_audio(audio_path)
 
     generated = _generate_quiz(transcript, api_key)
 
-    # Quiz und Fragen werden gemeinsam gespeichert oder gemeinsam zurückgerollt.
     with transaction.atomic():
         quiz = Quiz.objects.create(
             owner=user,
