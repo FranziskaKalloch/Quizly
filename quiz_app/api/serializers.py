@@ -72,8 +72,24 @@ class QuestionSerializer(serializers.ModelSerializer):
 class QuizSerializer(serializers.ModelSerializer):
     ''' Serializes a quiz and its associated questions. '''
     questions = QuestionSerializer(source='quiz_question', many=True, read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
+    video_url = serializers.URLField(read_only=True)
     class Meta:
         model = Quiz
         fields = ('id', 'title', 'description', 'created_at', 'updated_at', 'video_url', 'questions')
 
+
+class QuizUpdateSerializer(serializers.ModelSerializer):
+    ''' '''
+    questions = QuestionSerializer(source='quiz_question', many=True, read_only=True)
+    
+    class Meta:
+        model = Quiz
+        fields = ('id', 'title', 'description', 'created_at', 'updated_at', 'video_url', 'questions')
+        
+# hier dürfen nur Titel und Beschreibung geändert werden können:
+# ... Dafür braucht man keine zusätzliche Methode. 
+# ... Im ModelSerializer kann man über read_only_fields innerhalb von Meta festlegen, welche Felder ausschließlich ausgegeben werden dürfen. 
+# ... Nur title und description bleiben beschreibbar.
 

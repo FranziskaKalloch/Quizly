@@ -54,7 +54,12 @@ class RetrieveUpdateDestroyQuizView(RetrieveUpdateDestroyAPIView):
         return Quiz.objects.all()
     
     def get_serializer_context(self):
-        ''' pops the fields updated_at & created_at '''
+        """Excludes question timestamps from the serialized response via serializer context."""
         context = super().get_serializer_context()
         context["include_question_timestamps"] = False
         return context
+
+# Für PATCH sind drei Dinge entscheidend:
+#- Nur der Besitzer darf das Quiz bearbeiten.
+#- Titel und Beschreibung müssen einzeln änderbar sein; weggelassene Felder bleiben unverändert.
+#- Die Antwort enthält das vollständige aktualisierte Quiz samt Fragen.

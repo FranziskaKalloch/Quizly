@@ -41,17 +41,18 @@ class GeneratedQuiz(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     description: str = Field(min_length=1)
     questions: list[GeneratedQuestion] = Field(min_length=10, max_length=10)
+    
 
-
-def _download_audio(video_url, temp_dir):
-    # yt-dlp setzt die ursprüngliche Endung ein. FFmpeg erzeugt anschließend audio.m4a.
-    ydl_opts = {
-        "format": "bestaudio/best",
-        "outtmpl": str(temp_dir / "audio.%(ext)s"),
-        "quiet": True,
-        "noplaylist": True,
-        "js_runtimes": {"deno": {}, "node": {}},
-        "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "m4a"}],
+ # die gesamte Funktion soll die Audiospur eines YouTube Videos herunterladen und als Datei für Whisper bereitstellen
+def _download_audio(video_url, temp_dir): # zwei Parameter: video_url: den Link zum YouTube Video | temp_dir: der temporäre Ordner, in dem die Datei gespeichert werden soll
+    '''  '''
+    ydl_opts = { # Der Part legt zunächst die Einstellungen fest
+        "format": "bestaudio/best", # damit bestimmt man, welche verfügbare Mediendatei yt-dlp auswählen soll | bestaudio: bevorzugt die beste verfügbare reine Audiospur. | /best: Falls diese nicht verfügbar ist, verwende als Ersatz das beste Format mit Bild und Ton.
+        "outtmpl": str(temp_dir / "audio.%(ext)s"), # Das legt Speicherort und Dateinamen fest. Zerlegen wir den Ausdruck: temp_dir - ist der temporäre Ordner | / verbindet hier einen Ordnerpfad mit einem Dateinamen | audio ist der gewünschte Dateiname. | %(ext)s ist ein Platzhalter, den yt-dlp durch die tatsächliche Dateiendung ersetzt.
+        "quiet": False, # Das aktiviert den stillen Modus und unterdrückt normale Ausgaben von yt-dlp.
+        "noplaylist": True, # Wenn der Link sowohl ein einzelnes Video als auch eine Playlist bezeichnet, soll nur das einzelne Video verarbeitet werden.
+        "js_runtimes": {"deno": {}, "node": {}}, # Hier erlaubst du yt-dlp, Deno oder Node.js als JavaScript-Laufzeit zu verwenden. Solche Programme können bei der Verarbeitung von YouTube-Seiten benötigt werden.
+        "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "m4a"}], # Das legt fest, was nach dem Download passieren soll: postprocessors enthält eine Liste von Nachbearbeitungsschritten.
     }
 
     try:
