@@ -5,15 +5,14 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
 class RegisterSerializer(serializers.Serializer):
-    """Handle user registration, including password validation."""
-
+    """ Handles user registration, including password validation. """
     password = serializers.CharField(write_only=True)
     confirmed_password = serializers.CharField(write_only=True)
     username = serializers.CharField(max_length=150)
     email = serializers.EmailField()
         
     def validate(self, data):
-        """Validate passwords and check account availability."""
+        """ Ensure the passwords match and the username and email address are available. """
         email = data.get('email')
         username = data.get('username')
         
@@ -40,7 +39,7 @@ class RegisterSerializer(serializers.Serializer):
         return data
             
     def create(self, validated_data):
-        """Create and return a new user with a hashed password."""
+        """ Create and return a new user with a hashed password. """
         username = validated_data['username']
         email = validated_data['email']
         password = validated_data['password']
@@ -53,8 +52,7 @@ class RegisterSerializer(serializers.Serializer):
         return new_user
 
 class LoginSerializer(serializers.Serializer):
-    """Validate the username and password fields in a login request."""
-
+    """ Validates the username and password fields in a login request. """
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True)
     

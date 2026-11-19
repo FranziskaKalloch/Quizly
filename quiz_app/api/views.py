@@ -21,7 +21,7 @@ class CreateQuizView(APIView):
     authentication_classes = [CookieJWTAuthentication]
 
     def post(self, request):
-        """Generate and return a quiz from a YouTube URL."""
+        """ Create a quiz from the submitted YouTube URL and return it with its questions. """
         serializer = QuizCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -34,14 +34,13 @@ class CreateQuizView(APIView):
         return Response(QuizSerializer(quiz).data, status=status.HTTP_201_CREATED)
     
     def get(self, request):
-        """Return all quizzes for the authenticated user."""
+        """ returns all quizzes for the authenticated user """
         quizzes = Quiz.objects.filter(owner=request.user).prefetch_related("quiz_question")
         serializer = QuizSerializer(quizzes, many=True, context={"include_question_timestamps": False},)
         return Response(serializer.data, status=status.HTTP_200_OK)    
 
 class RetrieveUpdateDestroyQuizView(RetrieveUpdateDestroyAPIView):
-    """Allow owners to retrieve, update, or delete their quizzes."""
-
+    """ Allows authenticated owners to retrieve, update, or delete their quizzes. """
     permission_classes = [IsAuthenticated, IsQuizOwner]
     authentication_classes = [CookieJWTAuthentication]
     serializer_class = QuizSerializer 
@@ -50,11 +49,11 @@ class RetrieveUpdateDestroyQuizView(RetrieveUpdateDestroyAPIView):
     http_method_names = ['get', 'patch', 'delete', 'head', 'options']
     
     def get_queryset(self):
-        """Return the queryset used to look up a quiz by its ID."""
+        """ Returns the queryset used to look up a quiz by its ID. """
         return Quiz.objects.all()
     
     def get_serializer_context(self):
-        """Exclude question timestamps from serializer output."""
+        """ Excludes question timestamps from the serialized response via serializer context. """
         context = super().get_serializer_context()
         context["include_question_timestamps"] = False
         return context

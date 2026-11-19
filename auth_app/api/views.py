@@ -11,12 +11,11 @@ from .serializers import RegisterSerializer, LoginSerializer
 
 
 class RegisterView(APIView):
-    """Handle registration requests and create new users."""
-
+    """Validate the registration data, create a new user, and return a 201 Created response."""
     permission_classes = [AllowAny]
     
     def post(self, request):
-        """Validate registration data and create a user."""
+        """ Validate registration data, create a user, and return a success response. """
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True) 
         serializer.save() 
@@ -24,12 +23,11 @@ class RegisterView(APIView):
     
 
 class LoginView(APIView):
-    """Authenticate users and return their account details."""
-
+    """ Authenticate the user and return their account details on success or a 401 response if the credentials are invalid. """
     permission_classes = [AllowAny]
     
     def post(self, request):
-        """Authenticate the user and set an access-token cookie."""
+        """ Validate the login request, authenticate the user, and return their account details with access and refresh tokens set as HTTP-only cookies. """
         serializer = LoginSerializer(data=request.data) 
         serializer.is_valid(raise_exception=True) 
         username = serializer.validated_data['username'] 
@@ -43,7 +41,7 @@ class LoginView(APIView):
             )
             
         def get_tokens_for_user(user):
-            """Return tokens for an active user."""
+            """ Return access and refresh tokens for an active user. Raise AuthenticationFailed if the account is inactive. """
             if not user.is_active: 
                 raise AuthenticationFailed("User ist nicht aktiv")   
             
@@ -67,8 +65,7 @@ class LoginView(APIView):
         return response 
 
 class CookieJWTAuthentication(JWTAuthentication):
-    """Authenticate requests using an access-token cookie."""
-
+    """ Authenticate requests using the access token stored in a cookie. """
     def authenticate(self, request):
         access_token = request.COOKIES.get("access_token")
         if access_token is None:
@@ -84,7 +81,7 @@ class LogoutView(APIView):
     authentication_classes = [CookieJWTAuthentication]
     
     def post(self, request):
-        """Revoke the refresh token and clear authentication cookies."""
+        """ Log out the authenticated user by revoking the refresh token if it is present and valid, and clearing both authentication cookies. """
         response = Response(
             {"detail": "Log-Out successfully! All Tokens will be deleted. Refresh token is now invalid"}, status=status.HTTP_200_OK
         )
@@ -106,7 +103,7 @@ class RefreshTokenView(APIView):
     authentication_classes = []
     
     def post(self, request):
-        """Validate the refresh cookie and renew the access token."""
+        """ Validate the refresh token from the request cookie and set a new access token as an HTTP-only cookie. Return HTTP 401 if the refresh token is missing or invalid. """
         response = Response({
             "detail": "Token refreshed"
         }, status=status.HTTP_200_OK)
