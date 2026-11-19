@@ -15,10 +15,11 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 from ..models import Questions, Quiz
 
 class QuizCreationError(Exception): 
-    ''' Represent an error during audio processing or quiz generation. '''
+    """Represent an error during audio processing or quiz generation."""
 
 class GeneratedQuestion(BaseModel):
-    ''' Define and validate a generated question with four answer options. '''
+    """Validate a generated question with four answer options."""
+
     model_config = ConfigDict(str_strip_whitespace=True, hide_input_in_errors=True)
 
     question_title: str = Field(min_length=1, max_length=255)
@@ -27,7 +28,7 @@ class GeneratedQuestion(BaseModel):
 
     @model_validator(mode="after")
     def validate_answers(self):
-        ''' Ensure options are nonempty and unique and contain the correct answer.'''
+        """Check four distinct options and the correct answer."""
         if "" in self.question_options or len(set(self.question_options)) != 4:
             raise ValueError("The four options must be nonempty and distinct.")
         if self.answer not in self.question_options:
@@ -36,7 +37,8 @@ class GeneratedQuestion(BaseModel):
 
 
 class GeneratedQuiz(BaseModel):
-    '''Define and validate a generated quiz containing exactly ten questions.'''
+    """Validate a generated quiz containing exactly ten questions."""
+
     model_config = ConfigDict(str_strip_whitespace=True, hide_input_in_errors=True)
 
     title: str = Field(min_length=1, max_length=255)
@@ -45,7 +47,7 @@ class GeneratedQuiz(BaseModel):
     
 
 def _download_audio(video_url, temp_dir):
-    '''Download YouTube audio as an M4A file and return its path.'''
+    """Download YouTube audio as an M4A file and return its path."""
     ydl_opts = { 
         "format": "bestaudio/best", 
         "outtmpl": str(temp_dir / "audio.%(ext)s"), 
@@ -79,7 +81,7 @@ def _whisper_model():
 
 
 def _transcribe_audio(audio_path):
-    """Transcribe an audio file with Whisper and return nonempty text."""
+    """Transcribe audio with Whisper and return nonempty text."""
     try:
         with _whisper_lock:
             result = _whisper_model().transcribe(str(audio_path), fp16=False)
@@ -93,7 +95,7 @@ def _transcribe_audio(audio_path):
 
 
 def _generate_quiz(transcript, api_key):
-    """Generate a quiz from a transcript with Gemini and validate the response."""
+    """Generate a quiz with Gemini and validate the response."""
     config = types.GenerateContentConfig(
         system_instruction=(
             "Create a quiz based only on the transcript and write in its main language. "
@@ -118,7 +120,7 @@ def _generate_quiz(transcript, api_key):
 
 
 def create_quiz_from_url(video_url, user):
-    """Create a quiz from YouTube audio and save it with its questions for the user."""
+    """Generate and save a quiz from YouTube audio for the user."""
     api_key = getenv("GEMINI_API_KEY") or getenv("GOOGLE_API_KEY")
     if not api_key:
         raise QuizCreationError("Set GEMINI_API_KEY to enable quiz creation.")

@@ -5,11 +5,12 @@ from urllib.parse import urlparse, parse_qs, urlencode
 
 from ..models import Quiz, Questions
 class QuizCreateSerializer(serializers.Serializer):
-    ''' Validates the video URL submitted to create a quiz. '''
+    """Validate the video URL submitted to create a quiz."""
+
     url = serializers.URLField(required=True, allow_blank=False, max_length=200) 
     
     def validate_url(self, value): 
-        ''' Validates a YouTube video link and returns its canonical URL. '''
+        """Validate a YouTube link and return its canonical URL."""
         parsed_url = urlparse(value) 
         host = parsed_url.hostname 
         
@@ -41,7 +42,7 @@ class QuizCreateSerializer(serializers.Serializer):
     
     
 class QuestionSerializer(serializers.ModelSerializer):
-    ''' Serializes a quiz question with its answer options, correct answer, and timestamps. '''
+    """Serialize a question, its answer options, and timestamps."""
 
     def get_fields(self):
         fields = super().get_fields()
@@ -55,7 +56,8 @@ class QuestionSerializer(serializers.ModelSerializer):
         fields = ('id', 'question_title', 'question_options', 'answer', 'created_at', 'updated_at')
     
 class QuizSerializer(serializers.ModelSerializer):
-    ''' Serializes a quiz and its associated questions. '''
+    """Serialize a quiz and its associated questions."""
+
     questions = QuestionSerializer(source='quiz_question', many=True, read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
