@@ -16,10 +16,11 @@ from ..models import Questions, Quiz
 
 
 class QuizCreationError(Exception):
-    """Report a failure in the video or quiz generation pipeline."""
+    """Represent an error during audio processing or quiz generation."""
 
 
 class GeneratedQuestion(BaseModel):
+    """Define and validate a generated question with four answer options."""
     model_config = ConfigDict(str_strip_whitespace=True, hide_input_in_errors=True)
 
     question_title: str = Field(min_length=1, max_length=255)
@@ -28,6 +29,7 @@ class GeneratedQuestion(BaseModel):
 
     @model_validator(mode="after")
     def validate_answers(self):
+        """Ensure options are nonempty and unique and contain the correct answer."""
         if "" in self.question_options or len(set(self.question_options)) != 4:
             raise ValueError("The four options must be nonempty and distinct.")
         if self.answer not in self.question_options:
@@ -36,6 +38,7 @@ class GeneratedQuestion(BaseModel):
 
 
 class GeneratedQuiz(BaseModel):
+    """Define and validate a generated quiz containing exactly ten questions."""
     model_config = ConfigDict(str_strip_whitespace=True, hide_input_in_errors=True)
 
     title: str = Field(min_length=1, max_length=255)
@@ -45,7 +48,7 @@ class GeneratedQuiz(BaseModel):
 
  # die gesamte Funktion soll die Audiospur eines YouTube Videos herunterladen und als Datei für Whisper bereitstellen
 def _download_audio(video_url, temp_dir): # zwei Parameter: video_url: den Link zum YouTube Video | temp_dir: der temporäre Ordner, in dem die Datei gespeichert werden soll
-    '''  '''
+    """Download YouTube audio as an M4A file and return its path."""
     ydl_opts = { # Der Part legt zunächst die Einstellungen fest
         "format": "bestaudio/best", # damit bestimmt man, welche verfügbare Mediendatei yt-dlp auswählen soll | bestaudio: bevorzugt die beste verfügbare reine Audiospur. | /best: Falls diese nicht verfügbar ist, verwende als Ersatz das beste Format mit Bild und Ton.
         "outtmpl": str(temp_dir / "audio.%(ext)s"), # Das legt Speicherort und Dateinamen fest. Zerlegen wir den Ausdruck: temp_dir - ist der temporäre Ordner | / verbindet hier einen Ordnerpfad mit einem Dateinamen | audio ist der gewünschte Dateiname. | %(ext)s ist ein Platzhalter, den yt-dlp durch die tatsächliche Dateiendung ersetzt.
@@ -72,12 +75,14 @@ _whisper_lock = Lock()
 
 @cache
 def _whisper_model():
+    """Load the Whisper base model and cache it for subsequent calls."""
     import whisper
 
     return whisper.load_model("base")
 
 
 def _transcribe_audio(audio_path):
+    """Transcribe an audio file with Whisper and return nonempty text."""
     try:
         # Ein Whisper-Modell pro Prozess laden und seine Nutzung serialisieren.
         with _whisper_lock:
@@ -92,6 +97,7 @@ def _transcribe_audio(audio_path):
 
 
 def _generate_quiz(transcript, api_key):
+    """Generate a quiz from a transcript with Gemini and validate the response."""
     config = types.GenerateContentConfig(
         system_instruction=(
             "Create a quiz based only on the transcript and write in its main language. "
@@ -116,7 +122,7 @@ def _generate_quiz(transcript, api_key):
 
 
 def create_quiz_from_url(video_url, user):
-    """Create and store a quiz for the user from a YouTube video."""
+    """Create a quiz from YouTube audio and save it with its questions for the user."""
     api_key = getenv("GEMINI_API_KEY") or getenv("GOOGLE_API_KEY")
     if not api_key:
         raise QuizCreationError("Set GEMINI_API_KEY to enable quiz creation.")
