@@ -1,23 +1,30 @@
-from functools import cache
-from os import getenv
-from pathlib import Path
-from shutil import which
-from tempfile import TemporaryDirectory
-from threading import Lock
 
-import yt_dlp
-from django.db import transaction
-from google import genai
-from google.genai import errors, types
-from httpx2 import HTTPError
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+# Imports aus der Python Standardbibliothek
+from functools import cache # cache merkt sich das Ergebnis eines Funktionsaufrufs.
+from os import getenv
+from pathlib import Path # hilft beim Umgang mit Datei- und Ordnerpfaden. 
+from shutil import which # which prüft, ob ein ausführbares Programm über den Suchpfad PATH gefunden werden kann. Wird ein Programm nicht gefunden, liefert which den Wert None
+from tempfile import TemporaryDirectory # erstellt einen vorübergehenden Ordner für die heruntergeladene Audiodatei.
+from threading import Lock # Ein Lock ist eine Sperre für gleichzeitig laufende Verarbeitungsschritte.
+
+## zusätzlich installierte Pakete
+import yt_dlp # Damit importierst du das Download-Werkzeug yt-dlp. Später greift man über yt_dlp.YoutubeDL darauf zu, um die Audiodatei herunterzuladen.
+from django.db import transaction # hilft zusammengehörige Datenbankänderungen gemeinsam zu speichern
+from google import genai # Das ist das Google Gen AI SDK. damit erstellt die Funktion später einen Client, der die Anfrage an Gemini sendet.
+from google.genai import errors, types # Hier werden zwei Bestandteile aus dem SDK importiert: errors: enthält Fehlertypen, mit denen man beispielsweise API-Fehler abfangen kann. types: enthält Datenstrukturen für die Anfrage-Einstellungen.
+from httpx2 import HTTPError # ist ein Fehlertyp aus der verwendeten HTTP-Bibliothek.
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator #
+# ntic prüft die Struktur und die Werte von Daten. Kontrolliert hier die GEmini erzeugten Antworten
 
 from ..models import Questions, Quiz
 
 
-class QuizCreationError(Exception):
+class QuizCreationError(Exception): # Die Klasse erbt von Pythons eingebauter Fehlerklasse Exception. Dadurch besitzt sie bereits alles, was sie braucht, um Fehler auszulösen und abzufangen
     """Represent an error during audio processing or quiz generation."""
-
+# Bei einer Quizerstellung können unterschiedliche Probleme auftreten:
+# Download schlägt fehl
+# Whisper kann die Audiodatei nicht transkribieren
+# Gemini liefert keine gültigen Quizdaten
 
 class GeneratedQuestion(BaseModel):
     """Define and validate a generated question with four answer options."""

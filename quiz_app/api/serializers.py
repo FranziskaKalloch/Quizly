@@ -78,15 +78,6 @@ class QuizSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quiz
         fields = ('id', 'title', 'description', 'created_at', 'updated_at', 'video_url', 'questions')
-
-
-class QuizUpdateSerializer(serializers.ModelSerializer):
-    ''' '''
-    questions = QuestionSerializer(source='quiz_question', many=True, read_only=True)
-    
-    class Meta:
-        model = Quiz
-        fields = ('id', 'title', 'description', 'created_at', 'updated_at', 'video_url', 'questions')
         
 # hier dürfen nur Titel und Beschreibung geändert werden können:
 # ... Dafür braucht man keine zusätzliche Methode. 
